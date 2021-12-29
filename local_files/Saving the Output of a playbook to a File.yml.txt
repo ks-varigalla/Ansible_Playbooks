@@ -1,0 +1,14 @@
+- name: shell module
+  hosts: localhost
+  tasks:
+    - name: process info
+      shell:
+        cmd: ps -ef
+      register: process_info
+    - name: printinf the o/p
+      debug:
+        msg: "{{ process_info.stdout_lines }}"
+    - name: copy the output to a file
+      copy:
+        content:  "{{ process_info.stdout_lines }}"
+        dest: /root/playbooks/f1
