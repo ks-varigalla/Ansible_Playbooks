@@ -6,10 +6,10 @@
         port: 587
         secure: starttls
         charset: utf-8
-        sender: saik19199@gmail.com
-        username: saik19199@gmail.com
+        sender: sender@gmail.com
+        username: sender@gmail.com
         password: 123456
-        to: 'brk32132@gmail.com'
+        to: 'receiver@gmail.com'
         subject: "testing mail"
         body: "helloo"
       ignore_errors: yes
