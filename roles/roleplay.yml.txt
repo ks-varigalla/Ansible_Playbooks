@@ -1,0 +1,6 @@
+- name: demo role
+  hosts: server1
+  tasks:
+    - name: installing pkg using roles
+      include_role:
+        name: install-package
