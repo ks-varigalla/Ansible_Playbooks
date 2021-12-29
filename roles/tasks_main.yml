@@ -1,0 +1,8 @@
+- name: installing pkg name
+  debug:
+    msg: "{{ pkg_name }}"
+
+- name: installation
+  yum:
+    name: '{{ pkg_name }}'
+    state: present
