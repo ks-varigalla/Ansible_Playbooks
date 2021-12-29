@@ -1,0 +1,35 @@
+- name: SNOW integration with Ansible
+  uri:
+    url: "https://dev116703.service-now.com/api/now/table/incident?active=true"
+    force_basic_auth: true
+    validate_certs: false
+    user: "admin"
+    password: "JJ0NqL9fhQbk"
+  register: incidents
+
+
+#- name: Printing the incident numbers, sys_id, short_desc
+#  debug:
+#    msg:
+#      - "Incident_no.: {{ item.number }}"
+#      - "sys_id: {{ item.sys_id }}"
+#      - "Short_description: {{ item.short_description }}"
+#  with_items: "{{ incidents.json.result }}
+
+- name: Printing the data
+  set_fact:
+    details: |
+      [
+      {% for inc in incidents.json.result %}
+        {% if inc.task_effective_number == num %}
+          {{ "{" }}
+               "incident_no": "{{ inc.task_effective_number }}",
+               "sys_id": "{{ inc.sys_id }}",
+               "short_desc": "{{ inc.short_description }}"
+          {{ "}," }}
+        {% endif %}
+      {% endfor%}
+      ]
+
+- debug:
+    msg: "{{ details }}"

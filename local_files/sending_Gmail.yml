@@ -1,0 +1,15 @@
+- name: mailing module
+  hosts: localhost
+  tasks:
+    - mail:
+        host: "smtp.gmail.com"
+        port: 587
+        secure: starttls
+        charset: utf-8
+        sender: sender@gmail.com
+        username: sender@gmail.com
+        password: 123456
+        to: 'receiver@gmail.com'
+        subject: "testing mail"
+        body: "helloo"
+      ignore_errors: yes

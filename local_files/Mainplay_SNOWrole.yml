@@ -1,0 +1,6 @@
+- name: SNOW_roles playbook
+  hosts: localhost
+  tasks:
+    - name: Include the role
+      include_role:
+        name: snow
