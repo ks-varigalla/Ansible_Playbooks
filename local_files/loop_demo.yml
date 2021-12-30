@@ -1,0 +1,13 @@
+- name: loop demo
+  hosts: localhost
+  vars:
+    list:
+    - c
+    - c++
+    - java
+    - python  
+tasks:
+- name: Printing the list elements
+  debug:
+    msg: "The Popular langauages are: {{ item }}"
+  loop: "{{ list }}"
