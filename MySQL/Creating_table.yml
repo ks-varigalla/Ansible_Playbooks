@@ -1,0 +1,3 @@
+tasks:
+- name: Creating db tables in db 'testdb'
+  command: mysql -u root -p[root1234] testdb --skip-column-names --execute "create table test_table (Name varchar(255), EmpID INT NOT NULL)"
