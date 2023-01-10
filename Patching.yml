@@ -1,0 +1,38 @@
+---
+- name: Patching Runbook For Linux
+  hosts: all
+  become: yes
+  become_user: root
+  ignore_errors: yes
+
+  tasks:
+          - name: Check kernel Version and uptime before patching
+            shell: uptime
+            register: up_time
+            when: ansible_os_family == "RedHat"
+          - debug:
+               msg: For {{inventory_hostname}} The kernel version is {{ ansible_kernel }} and uptime is {{ up_time.stdout }}
+          - name: Update the System
+            dnf:
+                    name: "*"
+                    state: latest
+          - name: Restart the System
+            shell: "sleep 5 && reboot"
+            async: 1
+            poll: 0
+          - name: Waiting for ten seconds
+            pause:
+                    seconds: 10
+          - name: Waiting for Systems to come up
+            wait_for_connection:
+                    connect_timeout: 20
+                    sleep: 5
+                    delay: 5
+                    timeout : 500
+          - name: Check kernel Version and uptime after patching
+            shell: uptime
+            register: new_up_time
+          - debug:
+               msg: For {{inventory_hostname}} The kernel version is {{ ansible_kernel }} and uptime is {{ new_up_time.stdout }}
+
+
