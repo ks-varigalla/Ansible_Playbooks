@@ -1,0 +1,38 @@
+#TASK: User creation on servers
+#DESCRIPTION: Creates users and adds that user to sudoers file
+#AUTHOR: Krishna Sai V
+---
+- name: User creation on linux servers
+  hosts: localhost
+  become: yes
+  ignore_errors: true
+  vars_prompt:
+    - name: "username"
+      prompt: "Enter the username to be Created:"
+
+    - name: "password"
+      prompt: "Enter the password"
+
+    - name: "comment"
+      prompt: "Enter the user description"
+
+  tasks:
+    - name: Creating a user and assigning password
+      user:
+        name: "{{ username }}"
+        password: "{{ password | password_hash('sha512') }}"
+        comment: "{{ comment }}"
+        update_password: on_create
+        create_home: true
+
+    - name: Add group to sudo
+      lineinfile:
+        path: /etc/sudoers.d/adminsudo
+        create: yes
+        line: "{{ username }}       ALL=(ALL)       NOPASSWD: ALL"
+
+    - name: Checking the user's existence
+      shell: id "{{ username }}"
+      register: check
+    - debug: var=check.stdout_lines
+...
