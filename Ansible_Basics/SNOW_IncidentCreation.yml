@@ -1,0 +1,11 @@
+- name: create an incident in SNOW
+  hosts: localhost
+  tasks:
+    - name: Incident Cration
+      servicenow.servicenow.snow_record:
+          username: admin
+          password: JJ0NqL9fhQbk
+          instance: dev116703
+          state: present
+          data:
+            short_description: "This is a test incident opened by Krishna Sai"
