@@ -1,0 +1,92 @@
+---
+- name: Patching Runbook For Suse Linux
+  hosts: all
+  become: yes
+  become_user: root
+  ignore_errors: yes
+
+  tasks:
+    - name: Check kernel Version and uptime before patching
+      shell: uptime
+      register: up_time
+      when: ansible_os_family == "Suse"
+    - debug:
+        msg: For {{inventory_hostname}} The kernel version is {{ ansible_kernel }} and uptime is {{ up_time.stdout }}
+
+    - name: mount points before restarting the server
+      shell: df -h | grep -v 'tmpfs' | awk '{print $6}' > file1.txt
+
+    - name: Check for any updates
+      shell: sudo zypper list-updates
+      register: updates_check
+    - debug:
+        msg: "{{ updates_check.stdout_lines }}"
+
+    - name: Upgrade kernel package on RHEL/CentOS server
+      zypper:
+       name="kernel"
+       state=latest
+      register: zypper_update
+
+    - name: Update the System
+      zypper:
+         name: "*"
+         state: latest
+      register: upgrade_results
+      when: updates_check is defined
+
+    - name: Print errors if upgrade failed
+      debug:
+        msg: "Packages upgrade failed"
+      when: upgrade_results is not defined
+
+    - name: Restart the System
+      shell: "sleep 5 && reboot"
+      ignore_unreachable: true
+      async: 1
+      poll: 0
+
+    - name: Waiting for 60 seconds
+      pause:
+        seconds: 60
+
+    - name: Version check after playbook execution
+      shell: "uname -r && uptime"
+      register: post_version
+    - debug:
+        msg: For {{inventory_hostname}} the new kernel version and uptime is {{ post_version.stdout }}
+
+    - name: mount points after restarting the server
+      shell: df -h |grep -v 'tmpfs' | awk '{print $6}' > file2.txt
+
+    - name: register the first file
+      stat:
+        path: file1.txt
+        checksum: sha1
+        get_checksum: yes
+      register: file_1_checksum
+
+    - name: register the second file
+      stat:
+        path: file2.txt
+        checksum: sha1
+        get_checksum: yes
+      register: file_2_checksum
+
+    - name: Check if the files are the same
+      debug: msg="files are identical"
+      failed_when: file_1_checksum.stat.checksum != file_2_checksum.stat.checksum
+      ignore_errors: true
+      register: mount_check
+
+    - name: validating the pre&post checks(mounts)
+      lineinfile:
+        line: "{{ inventory_hostname }}: changes were detected after reboot."
+        dest: /root/output.txt
+        insertafter: EOF
+        create: yes
+      when: mount_check is failed
+      delegate_to: localhost
+
+
+...
