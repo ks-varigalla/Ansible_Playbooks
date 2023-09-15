@@ -1,0 +1,50 @@
+- name: Pre&Post checks of Patching
+  hosts: all
+  become: yes
+  ignore_errors: true
+  tasks:
+    - name: mount points before restarting the server
+      shell: df -h | grep -v 'tmpfs' | awk '{print $6}' > file1.txt
+
+    - name: Restart the System
+      shell: "sleep 5 && reboot"
+      ignore_unreachable: true
+      async: 1
+      poll: 0
+
+    - name: Waiting for 60 seconds
+      pause:
+        seconds: 60
+
+    - name: mount points after restarting the server
+      shell: df -h |grep -v 'tmpfs' | awk '{print $6}' > file2.txt
+
+    - name: register the first file
+      stat:
+        path: file1.txt
+        checksum: sha1
+        get_checksum: yes
+      register: file_1_checksum
+
+    - name: register the second file
+      stat:
+        path: file2.txt
+        checksum: sha1
+        get_checksum: yes
+      register: file_2_checksum
+
+    - name: Check if the files are the same
+      debug: msg="files are identical"
+      failed_when: file_1_checksum.stat.checksum != file_2_checksum.stat.checksum
+      ignore_errors: true
+      register: mount_check
+
+    - name: validating the pre&post checks(mounts)
+      lineinfile:
+        line: "{{ inventory_hostname }}: changes were detected after reboot."
+        dest: output.txt
+        insertafter: EOF
+        create: yes
+      when: mount_check is failed
+      delegate_to: localhost
+
