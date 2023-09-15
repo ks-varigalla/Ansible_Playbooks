@@ -1,0 +1,32 @@
+- name: Installing LSagent on linux servers
+  hosts: localhost
+  become: yes
+  ignore_errors: true
+  tasks:
+    - name: Copy the .run file to {{ inventory_hostname }}/tmp
+      copy:
+        src: /home/ext_vkrishna/LsAgent-linux.run
+        dest: /tmp
+        mode: a+x
+
+    - name: Executing .run file
+      shell: /tmp/LsAgent-linux.run --agentkey ed3beffe-378d-44cb-a278-257bf938a536 --mode unattended
+      environment:
+        ACCEPT_EULA: 'y'
+
+    - name: Checking the agent is running or not
+      shell: ps -ef|grep -i lsagent|grep -v grep
+      register: output
+    - debug: var=output.stdout_lines
+
+    - name: Trimming the output
+      set_fact:
+        op: "{{ output.stdout_lines }}"
+
+    - name: Saving the output with the server name as filename
+      lineinfile:
+        line: "{{ inventory_hostname }}: {{ op }},"
+        dest: "/root/Install-LsAgent-output/{{ inventory_hostname }}.txt"
+        insertafter: EOF
+        create: yes
+      delegate_to: localhost
