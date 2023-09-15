@@ -1,0 +1,85 @@
+#
+# ************************** TASK: USER MANAGEMENT ON THE REMOTE SERVERS ********************************
+#
+#************************** AUTHOR: KRISHNA SAI VARIGALLA ***********************************************
+#
+#------------------------------------------------------------------------------------------------------------------------------------------------------------
+- name: User Management on the servers
+  hosts: localhost      # Specify the host group here
+  become: yes
+  ignore_errors: true
+  vars_prompt:
+    - name: "username"
+      prompt: "Enter the username to be Created:"
+
+    - name: "password"
+      prompt: "Enter the password"
+
+    - name: "group_name"
+      prompt: "Enter the group to which the user belongs to"
+  tasks:
+    - name: Checking the user's existense on the server
+      shell: id "{{ username }}"
+      tags: ucheck
+
+    - name: Creating a new user
+      user:
+        name: "{{ username }}"
+        password: "{{ password }}"
+        update_password: on_create
+        group: "{{ group_name }}"
+      register: ucreateop
+      tags: ucreate
+
+    - name: Saving the output log to local file
+      lineinfile:
+        line: "{{ inventory_hostname }}: {{ ucreateop }},"
+        dest: /root/userdir/create.txt                 # Change the dest path to which the output of the playbook will be saved
+        insertafter: EOF
+        create: yes
+      delegate_to: localhost
+      tags: ucreate
+
+    - debug: msg="User created successfully"
+
+    - name: Giving user the sudo privileges
+      shell: usermod -aG wheel "{{ username }}"
+      args:
+        executable: /bin/bash
+      tags: ucreate
+
+
+
+    - name: Removing the user
+      user:
+        name: "{{ duser }}"
+        state: absent
+        remove: true
+      tags: udelete
+      register: udeleteop
+
+    - name: saving the output log to local file
+      lineinfile:
+        line: "{{ inventory_hostname }}: {{ udeleteop }},"
+        dest: /root/userdir/delete.txt                 # Change the dest path according to local environment
+        insertafter: EOF
+        create: yes
+      delegate_to: localhost
+      tags: udelete
+
+    - lineinfile:
+        path: /etc/sudoers
+        state: absent
+        regexp: ' ^"{{ duser }}" ALL=(ALL:ALL) ALL '
+      tags: udelete
+
+
+# To create the user, run the playbook as
+
+   #   ansible-playbook user.yml --tags ucreate 
+
+# To delete the user
+
+   #  ansible-playbook user.yml --tags udelete -e "duser=username"
+
+
