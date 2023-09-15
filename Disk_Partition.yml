@@ -1,0 +1,74 @@
+#
+# TASK:  CREATING A NEW VOLUME GROUP AND A VIRTUAL VOLUME ON THE DISK
+#
+# AUTHOR: KRISHNA SAI VARIGALLA
+#
+#------------------------------------------------------------------------------------------------------------------------------------------------------------#
+- name: Creating virtual group and volume
+  hosts: localhost
+  become: yes
+  ignore_errors: true
+  vars_prompt:
+    - name: "Disk"
+      prompt: "Enter the new disk name"
+
+    - name: "Group"
+      prompt: "Enter the group name"
+
+    - name: "Group_size(MB)"
+      prompt: "Enter the group size(in MB)"
+
+    - name: "Volume"
+      prompt: "Enter the volume name"
+
+    - name: "Volume_size(MB)"
+      prompt: "Enter the volume size(in MB)"
+
+  tasks:
+    - name: Creating a new physical volume
+      parted:
+        device: "{{ Disk  }}"
+        number: 1
+        flags: [ lvm ]
+        state: present
+
+    - name: Install lvm2 dependency
+      package:
+        name: lvm2
+        state: present
+
+    - name: Creating a virtual group
+      lvg:
+        vg: "{{ Group }}"
+        pvs: "{{ Device }}"
+        pesize: "{{ Group_size(MB) }}"
+
+    - name: Creating the volume
+      lvol:
+        vg:  "{{ Group }}"
+        lv: "{{ Volume }}"
+        size: "{{ Volume_size(MB)}}"
+
+    - name: Create directory for mounting
+      file:
+        path: "/{{ volume }}"
+        state: directory
+        mode: '0755'
+
+    - name: Creating a new filesystem
+      filesystem:
+        fstype: ext4
+        dev: "{{ Device }}/{{ Group }}/{{ volume }}"
+
+
+    - name: mount the volume(LV)
+      mount:
+        path: "/{{ volume }}"
+        src: "{{ Device }}/{{ Group }}/{{ volume }}"
+        fstype: ext4
+        state: mounted
+
+    - name: To verify the mount is visible
+      shell: df -h
+      register: out
+    - debug: var=out
