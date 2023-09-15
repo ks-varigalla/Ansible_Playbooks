@@ -1,0 +1,39 @@
+# TASK:   FILE SYSTEM HEALTH CHECK/CLEAN UP
+#
+# AUTHOR: KRISHNA SAI VARIGALLA
+#
+# ___________________________________________________________
+- name: File system clean up
+  hosts: localhost
+  become: yes
+  ignore_errors: True
+  tasks:
+    - name: Checking the disk
+      shell: df -h | grep -vE '^tmpfs|cdrom' | sed s/%//g | awk '{ if($5 > 60) print $0;}'
+      register: output
+
+    - name: Trimming the output
+      set_fact:
+        op: "{{ output.stdout_lines }}"
+
+    - name: Saving the output to a file
+      lineinfile:
+        line: "{{ inventory_hostname }}: {{ op }},"
+        dest: /root/opdir/output.txt
+        insertafter: EOF
+        create: yes
+      delegate_to: localhost
+
+    - debug: var=op
+
+    - name: Sending email
+      mail:
+        host: smtp.outlook.com
+        port: 587
+        username: username@gmail.com
+        password: password
+        to: recepient@gmail.com
+        subject: Disk Utilisation is High
+        body: 'Disk usage is high on the Server {{ inventory_hostname }} is {{ op }}.'
+      delegate_to: localhost
+   
